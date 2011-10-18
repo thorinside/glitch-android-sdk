@@ -1,16 +1,19 @@
 package com.tinyspeck.android;
 
-import android.os.AsyncTask;
-import android.util.Log;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
+import android.os.AsyncTask;
+import android.util.Log;
 
 
 public class GlitchAsyncTask extends AsyncTask<String, Void, Object> {
@@ -51,12 +54,27 @@ public class GlitchAsyncTask extends AsyncTask<String, Void, Object> {
 
     private String readURL(URL url) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream is = url.openStream();
-        int r;
-        while ((r = is.read()) != -1) {
-            baos.write(r);
+        
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        try {
+            int responseCode = urlConnection.getResponseCode();
+            InputStream in;
+            if (responseCode == 400)
+            {
+                in = new BufferedInputStream(urlConnection.getErrorStream());
+            }
+            else
+            {
+                in = new BufferedInputStream(urlConnection.getInputStream());
+            }
+            int r;
+            while ((r = in.read()) != -1) {
+                baos.write(r);
+            }
+            return new String(baos.toByteArray());
+        } finally {
+            urlConnection.disconnect();
         }
-        return new String(baos.toByteArray());
     }
 
     protected void onPostExecute(Object result) {

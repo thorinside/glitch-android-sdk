@@ -1,10 +1,11 @@
 package com.tinyspeck.android;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.net.Uri;
-
 import java.util.Map;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 
 
 public class Glitch {
@@ -51,15 +52,25 @@ public class Glitch {
     //// Authorization ////
     
     // Start browser with authorize URL so the user can authorize the app with OAuth
-    public void authorize(String scope, Activity activity) {
+    public void authorize(Context context, String scope, GlitchSessionDelegate delegate) {
+        
+        SharedPreferences prefs = context.getSharedPreferences("glitchskills.auth", Context.MODE_PRIVATE);
+        if (prefs.contains("redirectUri"))
+        {
+            handleRedirect(context, Uri.parse(prefs.getString("redirectUri", null)), delegate);
+            return;
+        }
+        
     	Uri authorizeUri = getAuthorizeUri(scope);
     	
         Intent browserIntent = new Intent(Intent.ACTION_VIEW, authorizeUri);
         browserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        activity.startActivity(browserIntent);
+        browserIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        browserIntent.setFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        context.startActivity(browserIntent);
     }
     
-    public void handleRedirect(Uri uri, GlitchSessionDelegate delegate)
+    public void handleRedirect(Context context, Uri uri, GlitchSessionDelegate delegate)
     {
     	if (uri != null) {
         	// Get access token from URI fragment
@@ -70,6 +81,10 @@ public class Glitch {
             if (token != null)
             {
             	this.accessToken = token;
+            	
+                SharedPreferences prefs = context.getSharedPreferences("glitchskills.auth", Context.MODE_PRIVATE);
+                prefs.edit().putString("redirectUri", uri.toString()).commit();
+            	
             	delegate.glitchLoginSuccess();
             }
         }

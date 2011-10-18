@@ -68,3 +68,5 @@ sample/gen/com/tinyspeck/sample/R.java
 sample/proguard.cfg
 
 sdk/res/proguard.cfg
+
+bin/
